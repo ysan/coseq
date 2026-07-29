@@ -129,10 +129,10 @@ sequenceDiagram
     activate A
     A->>B: request(B::chain)
     activate B
-    Note over A: yields; waiting for reply (other A sequences can run)
+    Note over A: yields and waits for reply (other A sequences can run)
     B->>C: request(C::work)
     activate C
-    Note over B: yields; waiting for reply (other B sequences can run)
+    Note over B: yields and waits for reply (other B sequences can run)
     C-->>B: reply(success)
     deactivate C
     B-->>A: reply(success)
