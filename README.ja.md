@@ -126,10 +126,10 @@ sequenceDiagram
     activate A
     A->>B: request(B::chain)
     activate B
-    Note over A: yield して返信待ち<br/>(A の他シーケンスは実行可)
+    Note over A: yield して返信待ち (A の他シーケンスは実行可)
     B->>C: request(C::work)
     activate C
-    Note over B: yield して返信待ち<br/>(B の他シーケンスも実行可)
+    Note over B: yield して返信待ち (B の他シーケンスも実行可)
     C-->>B: reply(success)
     deactivate C
     B-->>A: reply(success)
@@ -159,7 +159,7 @@ sequenceDiagram
     Note over B: seq1 は yield してパーク(待機)
     Q->>B: request(seq2)
     activate B
-    Note over B: seq1 の待機中に<br/>同じスレッドで seq2 が走る
+    Note over B: seq1 の待機中に 同じスレッドで seq2 が走る
     B-->>Q: reply(seq2)
     deactivate B
     C-->>B: reply
@@ -188,7 +188,7 @@ sequenceDiagram
     B->>C: request(C::work)
     Note over B: seq1 はパーク(待機)、ただし LOCKED
     Q->>B: request(seq2)
-    Note over B: seq2 は保留(キュー)され<br/>ロック中は実行されない
+    Note over B: seq2 は保留(キュー)され ロック中は実行されない
     C-->>B: reply
     Note over B: seq1 が再開し unlock()
     B-->>P: reply(seq1)

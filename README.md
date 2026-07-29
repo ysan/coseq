@@ -1,6 +1,6 @@
 # coseq
 
-**English** | [日本語](README.ja.md)
+**English** | [Japanese](README.ja.md)
 
 [![ci](https://github.com/ysan/coseq/actions/workflows/ci.yml/badge.svg)](https://github.com/ysan/coseq/actions/workflows/ci.yml) [![Coverage Status](https://coveralls.io/repos/github/ysan/coseq/badge.svg?branch=main)](https://coveralls.io/github/ysan/coseq?branch=main)
 
@@ -129,10 +129,10 @@ sequenceDiagram
     activate A
     A->>B: request(B::chain)
     activate B
-    Note over A: yields; waiting for reply<br/>(other A sequences can run)
+    Note over A: yields; waiting for reply (other A sequences can run)
     B->>C: request(C::work)
     activate C
-    Note over B: yields; waiting for reply<br/>(other B sequences can run)
+    Note over B: yields; waiting for reply (other B sequences can run)
     C-->>B: reply(success)
     deactivate C
     B-->>A: reply(success)
@@ -162,7 +162,7 @@ sequenceDiagram
     Note over B: seq1 yields and parks (waiting)
     Q->>B: request(seq2)
     activate B
-    Note over B: seq2 runs on the same thread<br/>while seq1 is parked
+    Note over B: seq2 runs on the same thread while seq1 is parked
     B-->>Q: reply(seq2)
     deactivate B
     C-->>B: reply
@@ -191,7 +191,7 @@ sequenceDiagram
     B->>C: request(C::work)
     Note over B: seq1 parked (waiting), but LOCKED
     Q->>B: request(seq2)
-    Note over B: seq2 is deferred (queued),<br/>NOT run while locked
+    Note over B: seq2 is deferred (queued), NOT run while locked
     C-->>B: reply
     Note over B: seq1 resumes, then unlock()
     B-->>P: reply(seq1)
