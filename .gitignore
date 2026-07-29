@@ -1,0 +1,7 @@
+local_build/
+*.o
+*.d
+*.so
+*.gcda
+*.gcno
+*.gcov

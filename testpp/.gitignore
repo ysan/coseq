@@ -1,0 +1,7 @@
+testpp
+objs/
+*.o
+*.d
+*.gcda
+*.gcno
+*.gcov
