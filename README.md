@@ -2,7 +2,7 @@
 
 **English** | [日本語](README.ja.md)
 
-[![ci](https://github.com/ysan/coseq/actions/workflows/ci.yml/badge.svg)](https://github.com/ysan/coseq/actions/workflows/ci.yml) [![Coverage Status](https://coveralls.io/repos/github/ysan/coseq/badge.svg?branch=master)](https://coveralls.io/github/ysan/coseq?branch=master)
+[![ci](https://github.com/ysan/coseq/actions/workflows/ci.yml/badge.svg)](https://github.com/ysan/coseq/actions/workflows/ci.yml) [![Coverage Status](https://coveralls.io/repos/github/ysan/coseq/badge.svg?branch=main)](https://coveralls.io/github/ysan/coseq?branch=main)
 
 **Co**routine **seq**uences — write concurrent, inter-thread message-passing sequences
 as straight-line code.

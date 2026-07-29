@@ -2,7 +2,7 @@
 
 [English](README.md) | **日本語**
 
-[![ci](https://github.com/ysan/coseq/actions/workflows/ci.yml/badge.svg)](https://github.com/ysan/coseq/actions/workflows/ci.yml) [![Coverage Status](https://coveralls.io/repos/github/ysan/coseq/badge.svg?branch=master)](https://coveralls.io/github/ysan/coseq?branch=master)
+[![ci](https://github.com/ysan/coseq/actions/workflows/ci.yml/badge.svg)](https://github.com/ysan/coseq/actions/workflows/ci.yml) [![Coverage Status](https://coveralls.io/repos/github/ysan/coseq/badge.svg?branch=main)](https://coveralls.io/github/ysan/coseq?branch=main)
 
 **Co**routine **seq**uences — スレッド間でメッセージをやり取りする並行シーケンスを、
 「一直線」のコードで書くためのフレームワーク。
