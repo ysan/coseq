@@ -1,5 +1,5 @@
 /*
- * coseqpp_if.h --- coseq C++ ラッパー: result / source / iface
+ * coseqpp_if.h --- coseq C++ ラッパー: result / source / iface / ログ
  *
  * C API(coseq_if.h)を薄く包むだけ。クラス名は snake_case、メンバは末尾 _。
  * (CIf は 'if' が予約語のため iface とした)
@@ -8,6 +8,8 @@
 #define _COSEQPP_IF_HH_
 
 #include <vector>
+#include <string>
+#include <functional>
 
 #include "coseq_if.h"
 
@@ -21,6 +23,19 @@ enum class result : int {
 	request_timeout  = COSEQ_RSLT_REQ_TIMEOUT,
 	sequence_timeout = COSEQ_RSLT_SEQ_TIMEOUT,
 };
+
+// ログレベル(C の COSEQ_LOG_* に対応)
+enum class log_level : int {
+	debug = COSEQ_LOG_DEBUG,
+	info  = COSEQ_LOG_INFO,
+	warn  = COSEQ_LOG_WARN,
+	error = COSEQ_LOG_ERROR,
+};
+
+// ログCB(C++): 整形済みメッセージを受け取る。coseq_set_log_cb を包む。
+// 設定は setup 前に一度行う想定。fn を空にすると解除。
+using log_fn = std::function<void (log_level level, const std::string &msg)>;
+void set_log_cb (log_fn fn);
 
 // gather_all() の戻り(各返信をコピー所有)
 struct reply {
@@ -46,7 +61,10 @@ public:
 
 	void set (coseq_src_t *p) {
 		src_ = p;
-		if (p) { message_.data_ = p->msg.msg; message_.length_ = p->msg.size; }
+		if (p != nullptr) {
+			message_.data_   = p->msg.msg;
+			message_.length_ = p->msg.size;
+		}
 	}
 
 	result   get_result       (void) const { return static_cast<result>(src_->result); }
@@ -97,11 +115,15 @@ public:
 		std::vector<coseq::reply> out;
 		for (;;) {
 			coseq_src_t *r = coseq_wait_reply(if_);
-			if (!r) break;
+			if (r == nullptr) {
+				break;
+			}
 			coseq::reply rp;
 			rp.req_id = r->req_id;
 			rp.rslt   = static_cast<result>(r->result);
-			if (r->msg.msg && r->msg.size) rp.msg.assign(r->msg.msg, r->msg.msg + r->msg.size);
+			if (r->msg.msg != nullptr && r->msg.size > 0) {
+				rp.msg.assign(r->msg.msg, r->msg.msg + r->msg.size);
+			}
 			out.push_back(std::move(rp));
 		}
 		return out;

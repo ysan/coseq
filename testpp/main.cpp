@@ -25,6 +25,7 @@ enum { CAT = 0 };
 
 static std::atomic<int> g_notify_count{0};
 static std::atomic<int> g_notify_last_len{-1};   /* 直近 notify のメッセージ長 */
+static std::atomic<int> g_log_errors{0};         /* ログCBで拾った ERROR 件数 */
 static std::string      g_log;   /* lock テストの実行順記録(ModuleA スレッドのみが触る) */
 
 static uint8_t *U8 (const std::string &s) { return reinterpret_cast<uint8_t *>(const_cast<char *>(s.c_str())); }
@@ -219,6 +220,14 @@ private:
 #define CHECK(cond) do { if (!(cond)) { std::cerr << "FAIL: " #cond " (line " << __LINE__ << ")" << std::endl; std::abort(); } } while (0)
 
 int main (void) {
+	// ログCBを注入(setup 前)。ERROR が来たら数える → 最後に 0 を確認。
+	coseq::set_log_cb([](coseq::log_level lv, const std::string &msg) {
+		if (lv == coseq::log_level::error) {
+			g_log_errors.fetch_add(1);
+			std::cerr << "coseq ERROR: " << msg << std::endl;
+		}
+	});
+
 	coseq::manager mgr;
 
 	auto a = std::make_shared<module_a>("ModuleA", 10);
@@ -307,6 +316,8 @@ int main (void) {
 	}
 
 	mgr.teardown();
+
+	CHECK (g_log_errors.load() == 0);   // 実行中に ERROR ログが出ていないこと
 
 	std::cout << "ALL TESTS PASSED" << std::endl;
 	return 0;

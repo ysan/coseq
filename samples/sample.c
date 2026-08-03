@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdarg.h>
 
 #include "coseq_if.h"
 
@@ -142,7 +143,23 @@ static const coseq_reg_t tbl[] = {
 	{ "ModuleC", 10, c_seqs, 3, NULL },
 };
 
+/* ログCB(注入): info/warn/error を標準出力へ */
+static int sample_log (int level, const char *fmt, ...) {
+	const char *lv = (level == COSEQ_LOG_ERROR) ? "E"
+	               : (level == COSEQ_LOG_WARN)  ? "W"
+	               : (level == COSEQ_LOG_INFO)  ? "I" : "D";
+	va_list ap;
+	va_start(ap, fmt);
+	printf("  [coseq %s] ", lv);
+	vprintf(fmt, ap);
+	printf("\n");
+	va_end(ap);
+	return 0;
+}
+
 int main (void) {
+	coseq_set_log_cb(sample_log);   /* setup 前に注入 */
+
 	coseq_ctx_if_t *ctx = create_coseq();
 	ctx->setup(ctx, tbl, 3);
 
