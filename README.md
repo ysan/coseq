@@ -231,6 +231,31 @@ Inside a sequence (via the `coseq_if_t *p_if` passed to it — carries its own i
 
 The C++ wrapper mirrors this: `coseq::manager` is an ordinary object (not a singleton).
 
+## Logging
+
+coseq logs internally at four levels (debug / info / warn / error) and routes them to a
+callback you inject — no output by default. Set it before `setup()`; the callback may be
+invoked from module threads, so keep it thread-safe.
+
+- **debug** — per-event processing trace (request / reply / notify / fiber lifecycle …)
+- **info** — lifecycle (setup / teardown / scheduler start-stop)
+- **warn / error** — anomalies (bad index, OOM, failed syscall …)
+
+```c
+/* C — printf-style callback */
+static int my_log (int level, const char *fmt, ...) { /* level = COSEQ_LOG_INFO/WARN/ERROR */ }
+coseq_set_log_cb(my_log);
+```
+
+```cpp
+// C++ — receives the formatted message
+coseq::set_log_cb([](coseq::log_level lv, const std::string &msg) { /* ... */ });
+```
+
+Levels below `COSEQ_LOG_MIN` are stripped at compile time (as v1 did). Default is `INFO`
+(debug trace compiled out — quiet during normal processing). Enable the full trace with
+`-DCOSEQ_LOG_MIN=COSEQ_LOG_DEBUG`, or drop info in release with `-DCOSEQ_LOG_MIN=COSEQ_LOG_WARN`.
+
 ## Notes
 
 - Uses POSIX `ucontext` for fiber context switching (Linux). One fixed stack per in-flight

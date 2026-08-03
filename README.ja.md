@@ -228,6 +228,31 @@ ctx->destroy(ctx);
 
 C++ ラッパーも同様: `coseq::manager` は(シングルトンではない)通常のオブジェクト。
 
+## ログ
+
+coseq は内部処理を debug / info / warn / error の4段でログし、**注入したコールバック**へ
+流します(既定は出力なし)。`setup()` の前に設定してください。コールバックはモジュール
+スレッドから呼ばれ得るのでスレッドセーフに。
+
+- **debug** … 毎イベントの処理トレース(request / reply / notify / fiber の生成終了 …)
+- **info** … ライフサイクル(setup / teardown / scheduler 起動停止)
+- **warn / error** … 異常(範囲外 index、OOM、system 関数失敗 …)
+
+```c
+/* C — printf 互換コールバック */
+static int my_log (int level, const char *fmt, ...) { /* level = COSEQ_LOG_INFO/WARN/ERROR */ }
+coseq_set_log_cb(my_log);
+```
+
+```cpp
+// C++ — 整形済みメッセージを受け取る
+coseq::set_log_cb([](coseq::log_level lv, const std::string &msg) { /* ... */ });
+```
+
+`COSEQ_LOG_MIN` 未満のレベルは**コンパイル時に除去**(v1 と同様)。既定は `INFO`
+(debug トレースは除去＝通常処理中は静か)。全トレースを見るなら
+`-DCOSEQ_LOG_MIN=COSEQ_LOG_DEBUG`、release で info も消すなら `-DCOSEQ_LOG_MIN=COSEQ_LOG_WARN`。
+
 ## メモ
 
 - fiber のコンテキスト切替に POSIX `ucontext` を使用(Linux)。実行中シーケンスごとに

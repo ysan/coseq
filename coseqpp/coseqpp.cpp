@@ -1,24 +1,51 @@
 /*
- * coseqpp.cpp --- manager 実装 + C コアからの dispatch trampoline
+ * coseqpp.cpp --- manager 実装 + C コアからの dispatch wrapper
  *
- * 全 seq に同一 trampoline を登録し、coseq_self_user() でそのモジュールの C++ オブジェクト
+ * 全 seq に同一 wrapper を登録し、coseq_self_user() でそのモジュールの C++ オブジェクト
  * (module_base*)を得て std::function / on_receive_notify を呼ぶ。グローバル登録表なし。
  */
+#include <cstdarg>
+#include <cstdio>
+#include <utility>
+
 #include "coseqpp.h"
 #include "coseqpp_base.h"
 
 namespace coseq {
 
-// C コアが呼ぶ trampoline (C リンケージ)
+// C コアが呼ぶ wrapper (C リンケージ)
 extern "C" {
-	static void seq_trampoline (coseq_if_t *p_if) {
+	static void seq_wrapper (coseq_if_t *p_if) {
 		module_base *mb = static_cast<module_base *>(coseq_self_user(p_if));
 		manager::dispatch_seq(mb, coseq_self_seq(p_if), p_if);
 	}
-	static void notify_trampoline (coseq_if_t *p_if) {
+	static void notify_wrapper (coseq_if_t *p_if) {
 		module_base *mb = static_cast<module_base *>(coseq_self_user(p_if));
 		manager::dispatch_notify(mb, p_if);
 	}
+}
+
+// --- ログ: C の coseq_set_log_cb を std::function で包む ---
+static log_fn g_log_fn;
+
+extern "C" {
+	static int log_wrapper (int level, const char *fmt, ...) {
+		if (!g_log_fn) {
+			return 0;
+		}
+		char buf[256];
+		va_list ap;
+		va_start(ap, fmt);
+		vsnprintf(buf, sizeof(buf), fmt, ap);
+		va_end(ap);
+		g_log_fn(static_cast<log_level>(level), std::string(buf));
+		return 0;
+	}
+}
+
+void set_log_cb (log_fn fn) {
+	g_log_fn = std::move(fn);
+	coseq_set_log_cb(g_log_fn ? &log_wrapper : nullptr);
 }
 
 void manager::dispatch_seq (module_base *mb, uint8_t seq_idx, coseq_if_t *p_if) {
@@ -34,7 +61,10 @@ void manager::dispatch_notify (module_base *mb, coseq_if_t *p_if) {
 manager::manager (void) : ctx_(create_coseq()) {}
 
 manager::~manager (void) {
-	if (ctx_) { ctx_->destroy(ctx_); ctx_ = nullptr; }
+	if (ctx_ != nullptr) {
+		ctx_->destroy(ctx_);
+		ctx_ = nullptr;
+	}
 }
 
 bool manager::setup (std::vector<std::shared_ptr<module_base>> &modules) {
@@ -51,7 +81,7 @@ bool manager::setup (std::vector<std::shared_ptr<module_base>> &modules) {
 		std::vector<coseq_seq_t> &cseqs = c_seqs_[i];
 		for (const sequence_t &s : mb->sequences_) {
 			coseq_seq_t cs;
-			cs.fn   = &seq_trampoline;
+			cs.fn   = &seq_wrapper;
 			cs.name = s.name.c_str();     // std::string の寿命は mb が保持
 			cseqs.push_back(cs);
 		}
@@ -61,8 +91,8 @@ bool manager::setup (std::vector<std::shared_ptr<module_base>> &modules) {
 		reg.nr_que_max  = mb->que_max_;
 		reg.seq_array   = cseqs.data();
 		reg.nr_seq_max  = static_cast<uint8_t>(cseqs.size());
-		reg.recv_notify = &notify_trampoline;
-		reg.user        = mb;             // trampoline はこれで対象 C++ オブジェクトへ届く
+		reg.recv_notify = &notify_wrapper;
+		reg.user        = mb;             // wrapper はこれで対象 C++ オブジェクトへ届く
 	}
 
 	return ctx_->setup(ctx_, c_tbl_.data(), static_cast<uint8_t>(n));

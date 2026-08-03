@@ -28,6 +28,30 @@ typedef enum {
 	COSEQ_RSLT_SEQ_TIMEOUT,
 } coseq_result_t;
 
+/*
+ * --- ログ ---
+ *   debug / info / warn / error の4段。ログはコールバックで注入(既定=何もしない)。
+ *   - debug : 毎イベントの処理トレース(request/reply/notify/fiber 等)。既定では除去。
+ *   - info  : ライフサイクル(setup/teardown/scheduler 起動停止)。
+ *   - warn / error : 異常。
+ *   レベルは #if で比較できるようマクロ。COSEQ_LOG_MIN 未満はコンパイル時に完全除去される。
+ *   既定は INFO(=DEBUG は除去)。全トレースを見るなら -DCOSEQ_LOG_MIN=COSEQ_LOG_DEBUG、
+ *   release で info も消すなら -DCOSEQ_LOG_MIN=COSEQ_LOG_WARN。
+ */
+/* info/warn/error は 0/1/2 で固定(公開後に変えない)。debug は下位なので -1。 */
+#define COSEQ_LOG_DEBUG  (-1)
+#define COSEQ_LOG_INFO   0
+#define COSEQ_LOG_WARN   1
+#define COSEQ_LOG_ERROR  2
+
+#ifndef COSEQ_LOG_MIN
+#define COSEQ_LOG_MIN    COSEQ_LOG_INFO   /* 既定=INFO以上(DEBUG はコンパイル除去) */
+#endif
+
+/* level は COSEQ_LOG_* のいずれか。printf 互換(format, ...)。 */
+typedef int (*coseq_log_cb) (int level, const char *format, ...);
+void coseq_set_log_cb (coseq_log_cb cb);
+
 /* 受信情報 */
 typedef struct coseq_src {
 	uint8_t        thread_idx;   /* 送り元 module idx */

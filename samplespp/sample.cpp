@@ -162,6 +162,14 @@ private:
 };
 
 int main (void) {
+	// ログCB(注入): info/warn/error を標準出力へ
+	coseq::set_log_cb([](coseq::log_level lv, const std::string &msg) {
+		const char *s = (lv == coseq::log_level::error) ? "E"
+		              : (lv == coseq::log_level::warn)  ? "W"
+		              : (lv == coseq::log_level::info)  ? "I" : "D";
+		std::cout << "  [coseq " << s << "] " << msg << std::endl;
+	});
+
 	coseq::manager mgr;
 
 	auto a = std::make_shared<module_a>("ModuleA", 10);
