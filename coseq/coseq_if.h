@@ -83,6 +83,10 @@ coseq_src_t *coseq_wait_reply      (coseq_if_t *p_if);
 /* 未消費の async 返信が全て揃うまで待ち、到着順に cb を呼ぶ。回収件数を返す。 */
 typedef void (*coseq_reply_cb) (coseq_src_t *r, void *user);
 int          coseq_gather          (coseq_if_t *p_if, coseq_reply_cb cb, void *user);
+/* 返信を要求せず送るだけ(fire-and-forget)。pending を登録せず、相手が返信しても破棄。
+ * yield しない。v1 の REQUEST_OPTION__WITHOUT_REPLY 相当。 */
+void         coseq_send            (coseq_if_t *p_if, uint8_t module_idx, uint8_t seq_idx,
+                                    uint8_t *msg, size_t msg_size);
 void         coseq_reply           (coseq_if_t *p_if, coseq_result_t result, uint8_t *msg, size_t msg_size);
 void         coseq_wait_timeout    (coseq_if_t *p_if, uint32_t msec);
 coseq_src_t *coseq_source          (coseq_if_t *p_if);

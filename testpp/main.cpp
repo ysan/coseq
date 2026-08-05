@@ -18,14 +18,15 @@
 #include "coseqpp.h"
 
 enum { MOD_A = 0, MOD_B, MOD_C };
-enum { A_ECHO = 0, A_CHAIN, A_REQTO, A_FANOUT, A_GATHER, A_SUBSCRIBE, A_LOCK, A_NOLOCK, A_PROBE, A_GETLOG, A_REQMSG };
+enum { A_ECHO = 0, A_CHAIN, A_REQTO, A_FANOUT, A_GATHER, A_SUBSCRIBE, A_LOCK, A_NOLOCK, A_PROBE, A_GETLOG, A_REQMSG, A_DO_SEND };
 enum { B_CHAIN = 0, B_SLOW, B_ECHO };
-enum { C_WORK = 0, C_REGISTER, C_NOTIFY_ONCE, C_UNREGISTER, C_NOTIFY_EMPTY };
+enum { C_WORK = 0, C_REGISTER, C_NOTIFY_ONCE, C_UNREGISTER, C_NOTIFY_EMPTY, C_SINK };
 enum { CAT = 0 };
 
 static std::atomic<int> g_notify_count{0};
 static std::atomic<int> g_notify_last_len{-1};   /* 直近 notify のメッセージ長 */
 static std::atomic<int> g_log_errors{0};         /* ログCBで拾った ERROR 件数 */
+static std::atomic<int> g_sink_count{0};         /* coseq_send の到達回数 */
 static std::string      g_log;   /* lock テストの実行順記録(ModuleA スレッドのみが触る) */
 
 static uint8_t *U8 (const std::string &s) { return reinterpret_cast<uint8_t *>(const_cast<char *>(s.c_str())); }
@@ -46,6 +47,7 @@ public:
 		s.push_back({[&](coseq::iface *p){ probe(p); },     "probe"});
 		s.push_back({[&](coseq::iface *p){ getlog(p); },    "getlog"});
 		s.push_back({[&](coseq::iface *p){ reqmsg(p); },    "reqmsg"});
+		s.push_back({[&](coseq::iface *p){ do_send(p); },   "do_send"});
 		set_sequences(s);
 	}
 	virtual ~module_a (void) { reset_sequences(); }
@@ -133,6 +135,11 @@ private:
 		assert (std::string(reinterpret_cast<char *>(r.get_message().data()), r.get_message().length()) == "xyz");
 		p->reply(coseq::result::success);
 	}
+	// fire-and-forget 送信(返信を待たない)。C::sink へ送るだけ。
+	void do_send (coseq::iface *p) {
+		p->send(MOD_C, C_SINK);
+		p->reply(coseq::result::success);
+	}
 
 	void on_receive_notify (coseq::iface *p) override {
 		coseq::source &s = p->get_source();
@@ -184,6 +191,7 @@ public:
 		s.push_back({[&](coseq::iface *p){ notify_once(p); }, "notify_once"});
 		s.push_back({[&](coseq::iface *p){ unregist(p); },    "unregister"});
 		s.push_back({[&](coseq::iface *p){ notify_empty(p); },"notify_empty"});
+		s.push_back({[&](coseq::iface *p){ sink(p); },        "sink"});
 		set_sequences(s);
 	}
 	virtual ~module_c (void) { reset_sequences(); }
@@ -217,6 +225,10 @@ private:
 	void notify_empty (coseq::iface *p) {
 		p->notify(CAT);
 		p->reply(coseq::result::success);
+	}
+	// fire-and-forget の受け先。返信しない(coseq_send の相手)。
+	void sink (coseq::iface * /*p*/) {
+		g_sink_count.fetch_add(1);
 	}
 };
 
@@ -318,7 +330,16 @@ int main (void) {
 		CHECK (log == "[P]");
 	}
 
-	// 正常系(1〜9)では ERROR ログが出ていないこと
+	// 9b) coseq_send (fire-and-forget): in-seq send + external send -> sink が2回呼ばれる
+	{
+		int before = g_sink_count.load();
+		mgr.request_sync(MOD_A, A_DO_SEND);   // A が C::sink へ send し、自身は success 返信
+		mgr.request_async(MOD_C, C_SINK);      // 外部から直接 fire-and-forget
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		CHECK (g_sink_count.load() == before + 2);
+	}
+
+	// 正常系(1〜9b)では ERROR ログが出ていないこと
 	CHECK (g_log_errors.load() == 0);
 
 	// 10) エラー経路(通常APIで踏めるものだけ)

@@ -698,6 +698,17 @@ coseq_src_t *coseq_wait_reply (coseq_if_t *p_if) {
 	return &f->src;
 }
 
+/* 返信を要求せず送るだけ(fire-and-forget)。pending 登録なし、yield なし。 */
+void coseq_send (coseq_if_t *p_if, uint8_t module_idx, uint8_t seq_idx,
+                 uint8_t *msg, size_t msg_size) {
+	fiber_t *f = p_if->f;
+	module_t *m = f->mod;
+	uint32_t rid = m->next_req_id++;   /* トレース用。pending には登録しない(相手の返信は破棄) */
+	LOGD("module[%d] '%s': send -> mod=%u seq=%u req_id=%u (no reply)",
+	     m->idx, m->name, module_idx, seq_idx, rid);
+	post(m->mgr, module_idx, make_ev(EV_START, seq_idx, rid, m->idx, COSEQ_RSLT_IGNORE, msg, msg_size));
+}
+
 /* 未消費の async 返信が全て揃うまで待ち、到着順に cb を呼ぶ。回収件数を返す。 */
 int coseq_gather (coseq_if_t *p_if, coseq_reply_cb cb, void *user) {
 	int n = 0;

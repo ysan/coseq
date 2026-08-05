@@ -220,6 +220,7 @@ ctx->destroy(ctx);
   到着順に1件ずつ回収(`req_id` で突き合わせ)
 - `coseq_gather` — 未消費の async 返信が*全て*揃うまで待つ
   (C++: `iface::gather_all()` は `std::vector<reply>` を返す)
+- `coseq_send` — fire-and-forget: 返信を待たずにモジュール/シーケンスへ送るだけ
 - `coseq_reply` — 要求元へ返信
 - `coseq_wait_timeout` — 協調的な遅延 / 周期タイマ
 - `coseq_reg_notify` / `coseq_unreg_notify` / `coseq_notify` — publish/subscribe

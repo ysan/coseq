@@ -223,6 +223,7 @@ Inside a sequence (via the `coseq_if_t *p_if` passed to it — carries its own i
   replies one at a time in arrival order, matched by `req_id`
 - `coseq_gather` — wait until *all* outstanding async replies have arrived (C++: `iface::gather_all()`
   returns a `std::vector<reply>`)
+- `coseq_send` — fire-and-forget: send to a module/sequence without expecting a reply
 - `coseq_reply` — reply to the requester
 - `coseq_wait_timeout` — cooperative delay / periodic timer
 - `coseq_reg_notify` / `coseq_unreg_notify` / `coseq_notify` — publish/subscribe
