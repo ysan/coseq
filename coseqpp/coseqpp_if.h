@@ -109,6 +109,11 @@ public:
 	}
 	source &wait_reply (void) { src_.set(coseq_wait_reply(if_)); return src_; }
 
+	// 返信不要の送信(fire-and-forget)
+	void send (uint8_t module_idx, uint8_t seq_idx, uint8_t *msg = nullptr, size_t len = 0) {
+		coseq_send(if_, module_idx, seq_idx, msg, len);
+	}
+
 	// 全ての未消費 async 返信が揃うまで待ち、到着順にコピーして返す
 	// (型名 reply は同名メソッド reply() と衝突するため coseq:: で明示修飾)
 	std::vector<coseq::reply> gather_all (void) {
