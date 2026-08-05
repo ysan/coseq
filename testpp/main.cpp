@@ -195,9 +195,12 @@ private:
 	}
 	void regist (coseq::iface *p) {
 		uint8_t client_id = 0;
-		bool ok = p->reg_notify(CAT, &client_id);
-		assert (ok);
-		p->reply(coseq::result::success, &client_id, sizeof(client_id));
+		if (p->reg_notify(CAT, &client_id)) {
+			p->reply(coseq::result::success, &client_id, sizeof(client_id));
+		} else {
+			// EXTERNAL から呼ばれた等で登録不可 -> error 返信
+			p->reply(coseq::result::error);
+		}
 	}
 	void notify_once (coseq::iface *p) {
 		std::string msg = "hello";
@@ -315,9 +318,24 @@ int main (void) {
 		CHECK (log == "[P]");
 	}
 
-	mgr.teardown();
+	// 正常系(1〜9)では ERROR ログが出ていないこと
+	CHECK (g_log_errors.load() == 0);
 
-	CHECK (g_log_errors.load() == 0);   // 実行中に ERROR ログが出ていないこと
+	// 10) エラー経路(通常APIで踏めるものだけ)
+	{
+		int before = g_log_errors.load();
+		uint8_t junk[4] = { 1, 2, 3, 4 };
+		mgr.request_async(99, 0, junk, sizeof(junk));   // post: invalid module_idx (ERROR, 同期)
+		mgr.request_async(MOD_C, 99, nullptr, 0);        // START: invalid seq_idx (ERROR, 非同期)
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		CHECK (g_log_errors.load() == before + 2);       // 2件の ERROR が記録される
+
+		// reg_notify を EXTERNAL から呼ぶ -> WARN + false -> error 返信
+		coseq::source r = mgr.request_sync(MOD_C, C_REGISTER);
+		CHECK (r.get_result() == coseq::result::error);
+	}
+
+	mgr.teardown();
 
 	std::cout << "ALL TESTS PASSED" << std::endl;
 	return 0;
