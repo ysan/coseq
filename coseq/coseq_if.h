@@ -102,6 +102,8 @@ void coseq_unlock (coseq_if_t *p_if);
 uint8_t coseq_self_module (coseq_if_t *p_if);
 uint8_t coseq_self_seq    (coseq_if_t *p_if);
 void   *coseq_self_user   (coseq_if_t *p_if);
+/* 実行中シーケンスの登録名(notify ハンドラは "recv_notify")。未設定なら "" */
+const char *coseq_self_seq_name (coseq_if_t *p_if);
 
 /*
  * --- 登録 ---
