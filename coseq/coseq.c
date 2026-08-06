@@ -118,6 +118,7 @@ typedef struct fiber {
 
 	coseq_seq_fn    fn;            /* 実行するシーケンス */
 	uint8_t         seq_idx;
+	const char     *seq_name;      /* 実行中シーケンスの登録名(トレース/get_sequence_name 用) */
 	int             reply_to;      /* 返信先 module idx or EXTERNAL */
 	uint32_t        reply_req_id;
 
@@ -585,6 +586,7 @@ static void *sched_loop (void *arg) {
 					                       e->requester, e->req_id, e->msg, e->msg_size,
 					                       COSEQ_RSLT_IGNORE, (uint8_t)e->requester, 0);
 					if (f != NULL) {
+						f->seq_name = m->seqs[e->seq_idx].name;
 						resume(m, f);
 					}
 				}
@@ -598,6 +600,7 @@ static void *sched_loop (void *arg) {
 					                       e->msg, e->msg_size, COSEQ_RSLT_SUCCESS,
 					                       (uint8_t)e->requester, e->client_id);
 					if (f != NULL) {
+						f->seq_name = "recv_notify";
 						resume(m, f);
 					}
 				}
@@ -756,6 +759,9 @@ uint8_t coseq_self_seq (coseq_if_t *p_if) {
 }
 void *coseq_self_user (coseq_if_t *p_if) {
 	return p_if->f->mod->user;
+}
+const char *coseq_self_seq_name (coseq_if_t *p_if) {
+	return p_if->f->seq_name ? p_if->f->seq_name : "";
 }
 
 /*--- notify ---*/

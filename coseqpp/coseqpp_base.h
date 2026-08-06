@@ -33,7 +33,11 @@ public:
 	const std::string &get_name (void) const { return name_; }
 
 protected:
-	void set_sequences   (const std::vector<sequence_t> &s) { sequences_ = s; }
+	void set_sequences (const std::vector<sequence_t> &s) { sequences_ = s; }
+	// 配列 + 個数の形(v1 互換)
+	void set_sequences (const sequence_t seqs[], uint8_t num) {
+		sequences_.assign(seqs, seqs + num);
+	}
 	void reset_sequences (void) { sequences_.clear(); }
 
 	// notify を受信したいモジュールはこれを override する

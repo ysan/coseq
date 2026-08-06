@@ -54,6 +54,7 @@ public:
 
 private:
 	void echo (coseq::iface *p) {
+		assert (std::string(p->get_sequence_name()) == "echo");   // get_sequence_name 検証
 		coseq::source &s = p->get_source();
 		p->reply(coseq::result::success, s.get_message().data(), s.get_message().length());
 	}
@@ -154,11 +155,13 @@ private:
 class module_b : public coseq::module_base {
 public:
 	module_b (std::string name, uint8_t que_max) : coseq::module_base(std::move(name), que_max) {
-		std::vector<coseq::sequence_t> s;
-		s.push_back({[&](coseq::iface *p){ chain(p); }, "chain"});
-		s.push_back({[&](coseq::iface *p){ slow(p); },  "slow"});
-		s.push_back({[&](coseq::iface *p){ echo(p); },  "echo"});
-		set_sequences(s);
+		// 配列 + 個数の overload(v1 互換)を使う
+		coseq::sequence_t seqs[] = {
+			{[&](coseq::iface *p){ chain(p); }, "chain"},
+			{[&](coseq::iface *p){ slow(p); },  "slow"},
+			{[&](coseq::iface *p){ echo(p); },  "echo"},
+		};
+		set_sequences(seqs, sizeof(seqs) / sizeof(seqs[0]));
 	}
 	virtual ~module_b (void) { reset_sequences(); }
 

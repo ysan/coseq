@@ -147,6 +147,9 @@ public:
 	void lock   (void) { coseq_lock(if_); }
 	void unlock (void) { coseq_unlock(if_); }
 
+	// 実行中シーケンスの登録名
+	const char *get_sequence_name (void) const { return coseq_self_seq_name(if_); }
+
 private:
 	coseq_if_t *if_;
 	source      src_;
