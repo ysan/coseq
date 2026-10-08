@@ -23,6 +23,7 @@
 #include <stdarg.h>
 #include <time.h>
 #include <errno.h>
+#include <sys/prctl.h>
 
 #include "coseq_if.h"
 
@@ -496,6 +497,7 @@ static void reap_done (module_t *m) {
 /*=== スケジューラ本体(モジュールスレッド) ===*/
 static void *sched_loop (void *arg) {
 	module_t *m = (module_t *)arg;
+	prctl(PR_SET_NAME, m->name); /* OS thread 名をモジュール名に (ログtag/デバッガ用) */
 	LOGI("module[%d] '%s' scheduler started", m->idx, m->name);
 
 	for (;;) {
