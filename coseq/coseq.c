@@ -189,6 +189,7 @@ typedef struct module {
 struct coseq_ctx_private {
 	module_t         modules[MAX_MODULE];
 	int              nr_module;
+	uint8_t          next_client_id;   /* notify client_id 採番(インスタンス毎に一意) */
 
 	/* 外部(非モジュール)スレッド用メールボックス */
 	pthread_mutex_t  ext_mtx;
@@ -766,9 +767,6 @@ const char *coseq_self_seq_name (coseq_if_t *p_if) {
 }
 
 /*--- notify ---*/
-/* notify の client_id は全モジュール横断でグローバル一意に採番する(リスナが複数モジュールへ
- * 登録したとき client_id だけで送り元を区別できるように)。0xff は未登録センチネルなので回避。 */
-static uint8_t g_notify_next_client_id = 0;
 bool coseq_reg_notify (coseq_if_t *p_if, uint8_t category, uint8_t *out_client_id) {
 	fiber_t *f = p_if->f;
 	module_t *m = f->mod;
@@ -776,10 +774,14 @@ bool coseq_reg_notify (coseq_if_t *p_if, uint8_t category, uint8_t *out_client_i
 		LOGW("reg_notify: caller is EXTERNAL (cannot be a listener)");
 		return false;
 	}
-	if (g_notify_next_client_id == 0xff) {
-		g_notify_next_client_id = 0;
+	/* client_id はインスタンス(mgr)毎に一意採番する。リスナが複数モジュールへ登録したとき
+	 * client_id だけで送り元を区別できるように(モジュール毎カウンタだと別モジュールから同じ id が
+	 * 返り区別不能)。プロセス global static にしないのは coseq が複数インスタンス共存可
+	 * (create_coseq 毎に独立, グローバル状態を持たない設計)のため。0xff は未登録センチネルなので回避。 */
+	if (m->mgr->next_client_id == 0xff) {
+		m->mgr->next_client_id = 0;
 	}
-	uint8_t id = g_notify_next_client_id++;
+	uint8_t id = m->mgr->next_client_id++;
 	notify_client_t *nc = malloc(sizeof(*nc));
 	if (nc == NULL) {
 		LOGE("reg_notify: malloc failed");
